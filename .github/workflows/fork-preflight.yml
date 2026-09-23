@@ -28,7 +28,8 @@ jobs:
       - name: Verify target SHA
         env:
           EXPECTED_SHA: ${{ inputs.target_sha }}
-        run: node -e "if (require('child_process').execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() !== process.env.EXPECTED_SHA) process.exit(1)"
+        run: >-
+          node -e "if (require('child_process').execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() !== process.env.EXPECTED_SHA) process.exit(1)"
 
       - uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6
 
@@ -53,7 +54,8 @@ jobs:
       - name: Verify target SHA
         env:
           EXPECTED_SHA: ${{ inputs.target_sha }}
-        run: node -e "if (require('child_process').execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() !== process.env.EXPECTED_SHA) process.exit(1)"
+        run: >-
+          node -e "if (require('child_process').execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() !== process.env.EXPECTED_SHA) process.exit(1)"
 
       - uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6
 
@@ -87,7 +89,8 @@ jobs:
       - name: Verify target SHA
         env:
           EXPECTED_SHA: ${{ inputs.target_sha }}
-        run: node -e "if (require('child_process').execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() !== process.env.EXPECTED_SHA) process.exit(1)"
+        run: >-
+          node -e "if (require('child_process').execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() !== process.env.EXPECTED_SHA) process.exit(1)"
 
       - uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6
 
@@ -160,7 +163,8 @@ jobs:
       - name: Verify target SHA
         env:
           EXPECTED_SHA: ${{ inputs.target_sha }}
-        run: node -e "if (require('child_process').execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() !== process.env.EXPECTED_SHA) process.exit(1)"
+        run: >-
+          node -e "if (require('child_process').execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() !== process.env.EXPECTED_SHA) process.exit(1)"
 
       - uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6
 
