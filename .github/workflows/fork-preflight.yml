@@ -39,7 +39,7 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: 'pnpm-lock.yaml'
 
-      - uses: ./.github/actions/choose-npm-install
+      - uses: ./.github/actions/standard-npm-install
 
       - run: pnpm exec lerna exec --stream --no-bail -- "tsc --noEmit"
 
@@ -65,7 +65,7 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: 'pnpm-lock.yaml'
 
-      - uses: ./.github/actions/choose-npm-install
+      - uses: ./.github/actions/standard-npm-install
 
       - name: Check diff after pnpm install
         run: git diff --exit-code --name-only
@@ -100,7 +100,7 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: 'pnpm-lock.yaml'
 
-      - uses: ./.github/actions/choose-npm-install
+      - uses: ./.github/actions/standard-npm-install
 
       - name: pnpm test (pyright-internal)
         run: pnpm test
@@ -174,7 +174,7 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: 'pnpm-lock.yaml'
 
-      - uses: ./.github/actions/choose-npm-install
+      - uses: ./.github/actions/standard-npm-install
 
       - run: npm pack --dry-run
         working-directory: packages/pyright
