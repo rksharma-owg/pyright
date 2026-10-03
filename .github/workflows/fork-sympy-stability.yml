@@ -1,0 +1,107 @@
+name: Fork SymPy stability
+
+env:
+  NODE_VERSION: '24.15.0' # Shipped with VS Code.
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_sha:
+        description: Exact merge commit to validate
+        required: true
+        type: string
+      baseline_sha:
+        description: Current upstream target commit
+        required: true
+        type: string
+
+jobs:
+  mypy_primer:
+    name: Fork SymPy stability
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: pyright_to_test
+          ref: ${{ inputs.target_sha }}
+          fetch-depth: 0
+          fetch-tags: false
+      - name: Verify target and baseline SHAs
+        working-directory: pyright_to_test
+        env:
+          TARGET_SHA: ${{ inputs.target_sha }}
+          BASELINE_SHA: ${{ inputs.baseline_sha }}
+        run: |
+          node -e "const cp=require('child_process');for(const sha of [process.env.TARGET_SHA,process.env.BASELINE_SHA]) {if(!/^[0-9a-f]{40}$/.test(sha)) process.exit(1);cp.execFileSync('git',['cat-file','-e',sha+'^{commit}']);} if(cp.execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim()!==process.env.TARGET_SHA) process.exit(1)"
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.11'
+      - uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6
+        with:
+          package_json_file: pyright_to_test/package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: 'pyright_to_test/pnpm-lock.yaml'
+      - name: Install dependencies
+        run: |
+          python -m pip install -U pip
+          pip install git+https://github.com/hauntsaninja/mypy_primer.git
+      - name: Run mypy_primer
+        shell: bash
+        env:
+          # mypy_primer installs both the PR and base commits. The base commit can contain
+          # historical peer dependency conflicts that should not block primer comparisons.
+          TARGET_SHA: ${{ inputs.target_sha }}
+          BASELINE_SHA: ${{ inputs.baseline_sha }}
+          NPM_CONFIG_LEGACY_PEER_DEPS: 'true'
+          NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
+        run: |
+          cd pyright_to_test
+          echo "new commit"
+          git rev-list --format=%s --max-count=1 $TARGET_SHA
+          git branch new_commit $TARGET_SHA
+
+          MERGE_BASE="$BASELINE_SHA"
+          git checkout -b base_commit $MERGE_BASE
+          echo "base commit"
+          git rev-list --format=%s --max-count=1 base_commit
+          # Keep the old checker source at the merge base, but use this PR's
+          # dependency and bundler metadata so the old checkout can install and build.
+          mapfile -t BASE_BUILD_FILES < <(
+            git ls-tree -r --name-only "$TARGET_SHA" |
+              grep -E '^(package(-lock)?\.json|pnpm-(lock|workspace)\.yaml|packages/[^/]+/package(-lock)?\.json|packages/[^/]+/rspack\.config\.js)$'
+          )
+          echo "Using build metadata for mypy_primer base:"
+          printf '%s\n' "${BASE_BUILD_FILES[@]}"
+          git checkout $TARGET_SHA -- "${BASE_BUILD_FILES[@]}"
+          printf 'legacy-peer-deps=true\n' > .npmrc
+          git add .npmrc "${BASE_BUILD_FILES[@]}"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m "Configure build dependencies for mypy_primer base"
+          echo "Prepared mypy_primer base_commit with generated package and rspack build metadata."
+
+          echo ''
+          cd ..
+          npm config set legacy-peer-deps true --location=user
+          npm config get legacy-peer-deps
+          # fail action if exit code isn't zero or one
+          (
+            mypy_primer \
+            --repo pyright_to_test \
+            --type-checker pyright \
+            --new new_commit --old base_commit \
+            --num-shards 8 --shard-index 0 \
+            --debug \
+            --output concise \
+            | tee diff_0.txt
+          ) || [ $? -eq 1 ]
+      - name: Upload mypy_primer diff
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mypy_primer_diffs_0
+          path: diff_0.txt
