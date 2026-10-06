@@ -953,10 +953,9 @@ export function getTypedDictDictEquivalent(
 
     let dictValueType = entries.extraItems.valueType;
 
-    let isEquivalentToDict = true;
-    entries.knownItems.forEach((entry) => {
+    for (const entry of entries.knownItems.values()) {
         if (entry.isReadOnly || entry.isRequired) {
-            isEquivalentToDict = false;
+            return undefined;
         }
 
         dictValueType = combineTypes([dictValueType, entry.valueType]);
@@ -971,12 +970,8 @@ export function getTypedDictDictEquivalent(
                 recursionCount + 1
             )
         ) {
-            isEquivalentToDict = false;
+            return undefined;
         }
-    });
-
-    if (!isEquivalentToDict) {
-        return undefined;
     }
 
     return dictValueType;
@@ -1537,6 +1532,7 @@ export function getTypeOfIndexedTypedDict(
     let diag = new DiagnosticAddendum();
     let allDiagsInvolveNotRequiredKeys = true;
 
+    let isKeyPresent: boolean | undefined;
     const resultingType = mapSubtypes(indexType, (subtype) => {
         if (isAnyOrUnknown(subtype)) {
             return subtype;
@@ -1562,12 +1558,15 @@ export function getTypeOfIndexedTypedDict(
                 allDiagsInvolveNotRequiredKeys = false;
                 return UnknownType.create();
             } else if (!(entry.isRequired || entry.isProvided) && usage.method === 'get') {
-                diag.addMessage(
-                    LocAddendum.keyNotRequired().format({
-                        name: entryName,
-                        type: evaluator.printType(baseType),
-                    })
-                );
+                isKeyPresent ??= evaluator.isKeyPresentInTypedDict(node);
+                if (!isKeyPresent) {
+                    diag.addMessage(
+                        LocAddendum.keyNotRequired().format({
+                            name: entryName,
+                            type: evaluator.printType(baseType),
+                        })
+                    );
+                }
             } else if (entry.isReadOnly && usage.method !== 'get') {
                 diag.addMessage(
                     LocAddendum.keyReadOnly().format({
@@ -1575,6 +1574,7 @@ export function getTypeOfIndexedTypedDict(
                         type: evaluator.printType(baseType),
                     })
                 );
+                allDiagsInvolveNotRequiredKeys = false;
             }
 
             if (usage.method === 'set') {

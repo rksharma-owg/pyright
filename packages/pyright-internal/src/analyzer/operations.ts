@@ -37,7 +37,7 @@ import {
     isOptionalType,
     isTupleClass,
     isUnboundedTupleClass,
-    isUnionableType,
+    isUnionable,
     lookUpClassMember,
     makeInferenceContext,
     mapSubtypes,
@@ -370,7 +370,7 @@ export function getTypeOfBinaryOperation(
             adjustedLeftType = convertToInstantiable(evaluator.getNoneType());
         }
 
-        if (isUnionableType([adjustedLeftType, adjustedRightType])) {
+        if (isUnionable(adjustedLeftType, adjustedRightType)) {
             if (isInstantiableClass(adjustedLeftType)) {
                 adjustedLeftType = specializeWithDefaultTypeArgs(adjustedLeftType);
             }
