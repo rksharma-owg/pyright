@@ -63,6 +63,7 @@ jobs:
           BASELINE_SHA: ${{ inputs.baseline_sha }}
           NPM_CONFIG_LEGACY_PEER_DEPS: 'true'
           NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
+          NODE_OPTIONS: '--max-old-space-size=8192'
         run: |
           cd pyright_to_test
           echo "new commit"
